@@ -36,18 +36,26 @@ class Chara(pygame.sprite.Sprite):
         #座標
         self.x = 0
         self.y = 0
+        
+        #所持武器
+        #制約：最大5, インスタンス
+        self.weapons = []
     def update(self):
         """
         描画処理
         """
         pass
+    
     def level_up(self):
+        """
+        レベルアップイベント
+        """
         pass
 
 """
 敵
 """
-class Enemy_1(pygame.sprite.Sprite):
+class Enemy1(pygame.sprite.Sprite):
     """
     敵
     """
@@ -81,7 +89,7 @@ class Enemy_1(pygame.sprite.Sprite):
 """
 武器
 """
-class Weapon(pygame.sprite.Sprite):
+class Weapon1(pygame.sprite.Sprite):
     """
     武器
     """
@@ -100,6 +108,17 @@ class Weapon(pygame.sprite.Sprite):
 """
 アイテムオブジェクトクラス
 """
+class Item1(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        
+        self.image = "path"
+    
+    def update(self):
+        pass
+    
+    def behavior(self):
+        pass
 
 """
 実行
