@@ -326,23 +326,29 @@ class Score:
         # レベル表示（影付き）
         text = f"Level: {level}"
         shadow_surface = self.font.render(text, True, self.shadow_color)
-        text_surf = self.font.render(text, True, self.color)
+        text_surface = self.font.render(text, True, self.color)
         screen.blit(shadow_surface, (self.text_posision[0] + 2, self.text_posision[1] + 2))
-        screen.blit(text_surf, self.text_posision)
+        screen.blit(text_surface, self.text_posision)
 
         # ゲージ描画
         gx, gy = self.exp_bar_position
         gw, gh = self.exp_bar_size
+
+        # ゲージ描写のSurfaceを作成(透明度設定)
+        exp_Surface = pg.Surface((gw,gh),pg.SRCALPHA)
         # 背景
-        bg_rect = pg.Rect(gx, gy, gw, gh)
-        pg.draw.rect(screen, (150, 150, 150), bg_rect)
+        # bg_rect = pg.Rect(gx, gy, gw, gh)
+        pg.draw.rect(exp_Surface, (150, 150, 150,150), (0,0,gw,gh))
         # 進捗フィル
         fill_w = int((progress / 10) * gw)
         if fill_w > 0:
-            fill_rect = pg.Rect(gx, gy, fill_w, gh)
-            pg.draw.rect(screen, (50, 200, 50), fill_rect)
+            pg.draw.rect(exp_Surface, (50, 200, 50, 200), (0,0,fill_w,gh))
         # 枠線
-        pg.draw.rect(screen, (200, 200, 200), bg_rect, 2)
+        pg.draw.rect(exp_Surface, (200, 200, 200, 200), (0, 0, gw, gh), 2)
+
+        #alpha値の設定
+        exp_Surface.set_alpha(240)
+        screen.blit(exp_Surface,(gx,gy))
 
         # 進捗テキスト（例: 3/10）を右側に表示
         prog_text = f"{progress}/10"
