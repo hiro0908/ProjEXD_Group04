@@ -357,18 +357,56 @@ class Score:
     打ち落とした爆弾，敵機の数をスコアとして表示するクラス
     爆弾：1点
     敵機：10点
+    Levelは `int(self.value/10)` で算出し，残りはゲージで表示する
     """
     def __init__(self):
-        self.font = pg.font.Font(None, 50)
-        self.color = (0, 0, 255)
-        self.value = 10000
-        self.image = self.font.render(f"Score: {self.value}", 0, self.color)
-        self.rect = self.image.get_rect()
-        self.rect.center = 100, height-50
+        self.font = pg.font.Font(None, 36)
+        self.color = (255, 255, 255)
+        self.shadow_color = (0, 0, 0)
+        self.value = 10
+        # テキスト位置
+        self.text_posision = (20, 20)
+        # ゲージ位置とサイズ
+        self.exp_bar_position = (130, 20)
+        self.exp_bar_size = (WIDTH-200, 24)
+        
 
     def update(self, screen: pg.Surface):
-        self.image = self.font.render(f"Score: {self.value}", 0, self.color)
-        screen.blit(self.image, self.rect)
+        # レベルと進捗を計算
+        level = int(self.value / 10)
+        progress = self.value % 10  # 0..9 (10で次レベル)
+
+        # レベル表示（影付き）
+        text = f"Level: {level}"
+        shadow_surface = self.font.render(text, True, self.shadow_color)
+        text_surface = self.font.render(text, True, self.color)
+        screen.blit(shadow_surface, (self.text_posision[0] + 2, self.text_posision[1] + 2))
+        screen.blit(text_surface, self.text_posision)
+
+        # ゲージ描画
+        gx, gy = self.exp_bar_position
+        gw, gh = self.exp_bar_size
+
+        # ゲージ描写のSurfaceを作成(透明度設定)
+        exp_Surface = pg.Surface((gw,gh),pg.SRCALPHA)
+        # 背景
+        # bg_rect = pg.Rect(gx, gy, gw, gh)
+        pg.draw.rect(exp_Surface, (150, 150, 150,150), (0,0,gw,gh))
+        # 進捗フィル
+        fill_w = int((progress / 10) * gw)
+        if fill_w > 0:
+            pg.draw.rect(exp_Surface, (50, 200, 50, 200), (0,0,fill_w,gh))
+        # 枠線
+        pg.draw.rect(exp_Surface, (200, 200, 200, 200), (0, 0, gw, gh), 2)
+
+        #alpha値の設定
+        exp_Surface.set_alpha(240)
+        screen.blit(exp_Surface,(gx,gy))
+
+        # 進捗テキスト（例: 3/10）を右側に表示
+        prog_text = f"{progress}/10"
+        prog_surface = self.font.render(prog_text, True, self.color)
+        screen.blit(prog_surface, (gx + gw + 10, gy - 2))
 
 
 class EMP(pg.sprite.Sprite):
@@ -462,6 +500,89 @@ class Shield(pg.sprite.Sprite):
             self.kill()
 
 # ===================== ここまで追加：Shieldクラス =====================
+class starting:
+    """
+    ホーム画面の表示
+    ・タイトル
+    ・スタート
+    ・やめる
+    """
+    def __init__(self):
+        self.title = pg.font.Font("misaki_mincho.ttf", 150)
+        self.font = pg.font.Font("misaki_mincho.ttf", 36)
+        self.color = (255, 255, 255)
+        img = pg.image.load("fig/2.png")
+        img2 = pg.image.load("fig/serihu_pass_icon.png")
+        self.chicken_image = pg.transform.rotozoom(img, 0, 1.0)
+        self.chicken_image2 = pg.transform.rotozoom(img, 0, 1.0)
+            # 左右反転してテキストの両脇に置く
+        self.chicken_image3 = pg.transform.flip(self.chicken_image2, True, False)
+        self.triangle=pg.transform.rotozoom(img2,30,0.06)
+
+
+
+
+        # メニュー状態
+        self.options = ["start", "quit"]
+        self.selected = 0
+
+    def update(self, screen: pg.Surface):
+        title = "tut伝説"
+
+        # 背景の半透明オーバーレイを描く
+        overlay = pg.Surface((WIDTH, HEIGHT), pg.SRCALPHA)
+        overlay.fill((0, 0, 0, 120))
+        screen.blit(overlay, (0, 0))
+
+        title_surf = self.title.render(title, True, self.color)
+        tx = WIDTH // 2 - title_surf.get_width() // 2
+        ty = HEIGHT // 6
+        screen.blit(title_surf, (tx, ty))
+
+        # タイトルの両脇にチキン画像を表示（左は反転画像，右は通常画像）
+        if self.chicken_image and self.chicken_image3:
+            img_w = self.chicken_image.get_width()
+            img_h = self.chicken_image.get_height()
+            title_cy = ty + title_surf.get_height() // 2
+            iy = title_cy - img_h // 2
+            left_x = tx - img_w - 24
+            right_x = tx + title_surf.get_width() + 24
+            # 左に反転画像、右に通常画像
+            screen.blit(self.chicken_image, (left_x, iy))
+            screen.blit(self.chicken_image3, (right_x, iy))
+
+        # メニュー（選択肢）を描画
+        start_y = HEIGHT // 2
+        for i, opt in enumerate(self.options):
+            color = (255, 255, 0) if i == self.selected else self.color
+            opt_surf = self.font.render(opt, True, color)
+            ox = WIDTH // 2 - opt_surf.get_width() // 2
+            oy = start_y + i * (opt_surf.get_height() + 10)
+            screen.blit(opt_surf, (ox, oy))
+            # 選択中の項目に合わせて三角形を表示
+            if i == self.selected and self.triangle:
+                tri_w = self.triangle.get_width()
+                tri_h = self.triangle.get_height()
+                tx = ox - tri_w - 12
+                ty = oy + (opt_surf.get_height() - tri_h) // 2
+                screen.blit(self.triangle, (tx, ty))
+
+# class Ending:
+#     """
+#     エンディング描画の設定
+#     ・画面表示
+#     ・テキスト表示
+#     """
+#     def __init__(self):
+#         self.font=pg.font.Font("misaki_mincho.ttf",36)
+#         self.text_bg_color=(255,255,255)
+#         self.display_position=(60,HEIGHT-90)
+#         self.display_size=(WIDTH-200,HEIGHT-30)
+#         self.image=pg.image.transform.rotozoom("fig/serihu_pass_icon.png",180,0.1)
+    
+#     def update(self,screen:pg.Surface):
+#         text=["よくもやってくれたな...","貴様のその行い万死に値する...","判決を言い渡す...","退学だ"]
+
 
 """
 武器に関するクラス
@@ -748,6 +869,12 @@ def main():
     swrd_se.set_volume(1)    
     
     score = Score()
+    # bg_img.set_alpha(10)##残像エフェクト今後の新機能で追加できそう
+    
+    score = Score()
+    start_screen = starting()
+    mode = "start"  # "start" or "play"
+
     bird = Bird(3, (900, 400))
     hpbar = Hpbar(bird)
 
@@ -780,37 +907,61 @@ def main():
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return 0
+
+            # スタート画面用のイベント処理
+            if mode == "start":
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_UP:
+                        start_screen.selected = max(0, start_screen.selected - 1)
+                    elif event.key == pg.K_DOWN:
+                        start_screen.selected = min(len(start_screen.options) - 1, start_screen.selected + 1)
+                    elif event.key == pg.K_RETURN or event.key == pg.K_SPACE:
+                        if start_screen.selected == 0:
+                            mode = "play"
+                        else:
+                            return 0
+                continue
+
+            # 以下はゲームプレイ中のイベント処理
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
-                #機能６
                 if key_lst[pg.K_LSHIFT]:
-                    nb = NeoBeam(bird, 3) #第２引数がビームの本数
+                    nb = NeoBeam(bird, 3)  # 第２引数がビームの本数
                     beams.add(nb.gen_beams())
                 else:
-                   beams.add(Beam(bird))
+                    beams.add(Beam(bird))
             if event.type == pg.KEYDOWN and event.key == pg.K_RSHIFT and score.value > 100:
                 bird.state = "hyper"
                 bird.hyper_life = 500
                 score.value -= 100
-            if event.type == pg.KEYDOWN and event.key== pg.K_e:
+            if event.type == pg.KEYDOWN and event.key == pg.K_e:
                 if score.value >= 20:
-                    emps.add(EMP(emys,bombs,screen))
-                    score.value -=20
+                    emps.add(EMP(emys, bombs, screen))
+                    score.value -= 20
             if event.type == pg.KEYDOWN and event.key == pg.K_RETURN:
                 if score.value >= 200:
                     gravity.add(Gravity(400))
                     score.value -= 200
 
-
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_SPACE:
                     beams.add(Beam(bird))
-                # 防御壁：Sキー押下で発動
                 if event.key == pg.K_s:
-                    shields.add(Shield(bird, life=400))
-                    score.value -= 50  # 消費スコア
+                    if score.value >= 50 and len(shields) == 0:
+                        shields.add(Shield(bird, life=400))
+                        score.value -= 50  # 消費スコア
 
         screen.blit(bg_img, [0, 0])
 
+        # スタート画面を表示している場合はゲーム処理をスキップ
+        if mode == "start":
+            start_screen.update(screen)
+            pg.display.update()
+            tmr += 1
+            clock.tick(50)
+            continue
+
+        if tmr % 200 == 0:  # 200フレームに1回，敵機を出現させる
+            emys.add(Enemy())
 
         if tmr % 20 == 0:  # 200フレームに1回，敵機を出現させる
             emys.add(Enemy())
